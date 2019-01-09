@@ -19,6 +19,7 @@ Search strategy:
 
 
 ----- How to use event_selection -----
+
 Prerequisite: ROOT and Delphes libraries must be in PYTHONPATH
 
 Input: Two files (generated from Delphes) -- tag_#_delphes_events.root and run_#_tag_#_banner.txt
@@ -36,5 +37,6 @@ python event_selection [channel] [run-start] [run-end] [tag] [output]
 Open this file to manually change cuts (lines 48-56)
 
 ----- File descriptions -----
+
 event_selection: main python code for executing search command
 reconstruction: module containing all the complicated functions and objects. One important aspect of this is the definition of a wpCut object. This object stores all the relevant information of the parameters for the selection described above.
