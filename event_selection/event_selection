@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+
+INFORMATION = """
+Event selection for p p > wp zp, (wp > t b, (t > w b, (w > j j))), zp > n1 n1
+
+<How to use>
+Prerequisite: ROOT and Delphes libraries must be in PYTHONPATH
+
+Input: Two files -- tag_#_delphes_events.root and run_#_tag_#_banner.txt
+Output: One file (.root) containing histograms and cut&event information
+        (will open and edit)
+
+In terminal, type:
+python event_selection [channel] [run-start] [run-end] [tag] [output]
+
+[channel]: enter whether signal, background, specify channel, etc.
+[run-start] [run-end]: enter run # (e.g. 1 20  if run 01-20)
+[tag]: enter tag # (e.g. 1 if tag_1)
+[output]: enter output file name (e.g. "myresults.root")
+"""
+############## Modules ####################
+from sys import argv, exit
+import ROOT
+from reconstruct import *
+from time import clock
+
+ROOT.gSystem.Load("libDelphes")
+
+try:
+  ROOT.gInterpreter.Declare(
+    '#include "classes/DelphesClasses.h"')
+  ROOT.gInterpreter.Declare(
+    '#include "external/ExRootAnalysis/ExRootTreeReader.h"')
+except:
+  pass
+
+######### Set Default Parameters ##########
+# Particles of interest. Enter PID:
+PID = [9916663, 9906663, 9926662]   # wp, zp, n1
+
+# Mass of top quark and W+ Boson
+MT, MW = 1.730000e+02, 7.982436e+01
+
+############# Set Cut #####################
+### reconstruct.wpCut object ###
+# Purpose of this object is to store cut info
+
+CUT = wpCut()
+CUT.setBTag(2) # 2 b-tagged jets
+CUT.setNonBJet(2) # 2 non-b-tagged jets
+CUT.setMWBosonLower(MW - 22)
+CUT.setMWBosonUpper(MW + 22)
+CUT.setMTopQuarkLower(MT - 30)
+CUT.setMTopQuarkUpper(MT + 30)
+CUT.setMETLower(100)
+CUT.updateID()
+
+#############################################################################
+#############################################################################
+
+### ---------------------- MAIN ------------------------- ###
+
+def main(*argv):
+
+  start_time = clock()
+
+  ############## Read Input *argv ################
+  # Input arguments
+  if len(argv) < 6:
+    print INFORMATION
+    exit(1)
+  else:
+    channel, run_start, run_end, tag, output =\
+    argv[1], argv[2], argv[3], argv[4], argv[5]
+
+  ############## Create Output File ##############
+  outputFile = ROOT.TFile(output, "UPDATE")
+
+  ### Read files and store result in outputFile
+  this_dir = CUT.cutID+"/"+channel
+  try:
+    outputFile.mkdir(this_dir)
+  except:
+    pass
+
+  # Iterate over the range of run_start:run_end
+  # Open and read delphes_events.root files
+  if channel.startswith("signal"):
+    event_type = "signal"
+  elif channel.startswith("background"):
+    event_type = channel
+
+  for i in range(int(run_start), int(run_end)+1):
+    print "Now starting run_{:02d}...".format(i)
+
+    directory = "data/"+event_type+"/Events/run_{:02d}/".format(i)
+    inputfile = "tag_{}_delphes_events.root".format(tag)
+    banner = "run_{:02d}_tag_{}_banner.txt".format(i, tag)
+    delphes_file = directory + inputfile
+    banner_file = directory + banner
+    print "  Variables set. Accessing files..."
+
+    # Obtain histograms
+    mwHist, mtHist, mwpHist, METHist =\
+    event_selection (delphes_file, CUT, event_type, MT, MW)
+    print "  Event selection: done"
+
+    # Obtain event information
+    event_info =\
+    event_information (banner_file, CUT, *PID)
+    print "  Event information: done"
+
+    # Store the histograms into outputFile
+    # directory: .root/cutID/channel/run_{}
+    print "  Writing to file..."
+    outputFile.mkdir(this_dir+"/run_"+str(i))
+    ROOT.gDirectory.cd("/"+this_dir+"/run_"+str(i))
+    mwHist.Write()
+    mtHist.Write()
+    mwpHist.Write()
+    METHist.Write()
+
+    # Store event information into TNtuple objects
+    var_list = ":".join(event_info.keys())
+    ntuple = ROOT.TNtuple("ntuple", "event info", var_list)
+    ntuple.Fill(*event_info.values())
+    ntuple.Write()
+    
+    print "  Congrats! run_{:02d} is now completed".format(i)
+    if i < run_end:
+      print "  Moving on to run_{:02d} ...\n".format(i+1)
+    else:
+      print "\n ------- All process finished ------- \n"
+
+  end_time = clock()
+
+  ### Run time
+  print "Total run time: {:.3f} seconds".format(end_time - start_time)
+
+if __name__ == "__main__":
+  main(*argv)
+
+#############################################################################
+#############################################################################
+
+# Close program?
+user_input = None
+while user_input != "n":
+  user_input = raw_input ("To continue, press \"n\" key followed by <Enter>: ")
