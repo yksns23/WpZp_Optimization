@@ -23,6 +23,7 @@ Search strategy:
 Prerequisite: ROOT and Delphes libraries must be in PYTHONPATH
 
 Input: Two files (generated from Delphes) -- tag_#_delphes_events.root and run_#_tag_#_banner.txt
+
 Output: One file (.root) containing histograms and cut&event information
         (will open and edit)
 
