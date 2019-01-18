@@ -1,3 +1,5 @@
+<!-- run hist2workspace config/wpzp.xml -->
+
 <!--
     Top-level configuration,  details for the example channel are in example_channel.xml.
     This is the input file to the executable.
@@ -8,7 +10,7 @@
 
 <!DOCTYPE Combination  SYSTEM 'HistFactorySchema.dtd'>
 
-<Combination OutputFilePrefix="./results/wpzp" >
+<Combination OutputFilePrefix="./results/data3" >
 
   <Input>./config/wpzp_channel.xml</Input>
 
