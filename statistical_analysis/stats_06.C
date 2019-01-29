@@ -17,6 +17,7 @@ using namespace RooStats;
 
 // Frequentist p value calculator
 void local_p (  const char* file_name,
+                double_t*   mass_of_wp,
                 const char* workspace_name = "combined",
                 const char* sbmodel_name = "ModelConfig",
                 const char* bmodel_name = "",
@@ -90,8 +91,26 @@ void local_p (  const char* file_name,
   result->SetBackgroundAsAlt(false);
   result->Print();
 
+  double_t significance = (double_t) result->Significance();
+  double_t significance_error = (double_t) result->SignificanceError();
+
+  /*
+  result->Print();
+
   // Plot
   HypoTestPlot *plot = new HypoTestPlot(*result, 100);
   plot->SetLogYaxis(true);
   plot->Draw();
-}
+  */
+
+  //----- Store Results -----//
+  // Create ROOT file
+  TFile *output = new TFile::Open("local_p.root", "UPDATE");
+  if (!output->exists("p_values")){
+    TNtuple *p_values = new TNtuple("p_values", "significance", "mwp:local_p:error");}
+  else{
+    TNtuple *p_values = (TNtuple*)output->Get("p_values")}
+  p_values->Fill(mwp, significance, significance_error);
+  p_values->Write();
+  output->Close();
+}	
