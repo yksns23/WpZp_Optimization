@@ -16,8 +16,9 @@ using namespace RooFit;
 using namespace RooStats;
 
 // Frequentist p value calculator
-void local_p (  const char* file_name,
-                double_t*   mass_of_wp,
+void local_p (  const char* infile,
+                double_t    mwp,
+                const char* outfile = "local_p.root"
                 const char* workspace_name = "combined",
                 const char* sbmodel_name = "ModelConfig",
                 const char* bmodel_name = "",
@@ -25,7 +26,7 @@ void local_p (  const char* file_name,
 
   ///// PART 1: Setup /////
   //----- Get File -----//
-  TFile *file = TFile::Open(file_name);
+  TFile *file = TFile::Open(infile, "READ");
   if(!file){
     cout << "File not found\nBye" << endl;
     return;
@@ -93,6 +94,17 @@ void local_p (  const char* file_name,
 
   double_t significance = (double_t) result->Significance();
   double_t significance_error = (double_t) result->SignificanceError();
+  double_t p_value = (double_t) result->NullPValue();
+  double_t p_error = (double_t) result->NullPError();
+
+  std::cout << "Expected significance is: " << significance <<
+               "\nwith error : " << significance_error << std::endl;
+
+  std::cout << "Expected p_value is: " << p_value <<
+               "\nwith error : " << p_error << std::endl;
+
+  delete profll;
+  delete hc;
 
   /*
   result->Print();
@@ -105,12 +117,13 @@ void local_p (  const char* file_name,
 
   //----- Store Results -----//
   // Create ROOT file
-  TFile *output = new TFile::Open("local_p.root", "UPDATE");
-  if (!output->exists("p_values")){
-    TNtuple *p_values = new TNtuple("p_values", "significance", "mwp:local_p:error");}
-  else{
-    TNtuple *p_values = (TNtuple*)output->Get("p_values")}
-  p_values->Fill(mwp, significance, significance_error);
+  TFile *output = TFile::Open(outfile, "UPDATE");
+  TNtuple *p_values = (TNtuple*) output->Get("significance");
+  if (!p_values){
+    TNtuple *tnt = new TNtuple("significance", "significance", "mwp:significance:sig_error:p_value:p_error");
+    p_values = tnt;
+  }
+  p_values->Fill((float_t) mwp, (float_t) significance, (float_t) significance_error, (float_t) p_value, (float_t) p_error);
   p_values->Write();
   output->Close();
 }	
