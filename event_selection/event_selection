@@ -127,7 +127,7 @@ def main(*argv):
     ntuple.Write()
     
     print "  Congrats! run_{:02d} is now completed".format(i)
-    if i < run_end:
+    if i+1 < int(run_end):
       print "  Moving on to run_{:02d} ...\n".format(i+1)
     else:
       print "\n ------- All process finished ------- \n"
