@@ -1,0 +1,31 @@
+<!-- Single channel configuration for run_7 -->
+
+<!DOCTYPE Channel  SYSTEM 'HistFactorySchema.dtd'>
+
+  <Channel Name="run7_mwp900" InputFile="datafiles/data_try_adding.root" >
+
+    <!-- Set the StatError type to Poisson. -->
+    <StatErrorConfig RelErrorThreshold="0.05" ConstraintType="Poisson" />
+
+    <Sample Name="signal" HistoPath="/020457101143203100/signal/run_7/" HistoName="mwp_signal" NormalizeByTheory="True">
+      <OverallSys Name="syst1" Low="0.998" High="1.002"/>
+      <NormFactor Name="sXsec" Val='4.91e-02' Low="0" High="1000"/>
+    </Sample>
+<!--
+    <Sample Name="background_ttxZ_4j2b2vl" HistoPath="/020457101143203100/background_ttxZ_4j2b2vl/run_1/" HistoName="mwp_background_ttxZ_4j2b2vl" NormalizeByTheory="True" >
+      <OverallSys Name='sys_bXsec1' Low='0.998' High='1.002'/>
+      <NormFactor Name='bXsec1' Val='0.04719' Low='0' High='1'/>
+    </Sample>
+
+    <Sample Name="background_ttxZ_lvl2j2b2vl" HistoPath="/020457101143203100/background_ttxZ_lvl2j2b2vl/run_1/" HistoName="mwp_background_ttxZ_lvl2j2b2vl" NormalizeByTheory="True" >
+      <OverallSys Name='sys_bXsec2' Low='0.998' High='1.002'/>
+      <NormFactor Name='bXsec2' Val='3000' Low='0' High='10000'/>
+    </Sample>
+-->
+    <Sample Name="bcombined" HistoPath="" HistoName="mwp_background_tbZ" NormalizeByTheory="True">
+      <OverallSys Name='syst' Low='0.99' High='1.01'/>
+      <NormFactor Name='bxsec' Val='0.001167' Low='0' High='1' Const='True'/>
+      <NormFactor Name='pbtofb' Val='1000' Low='999' High='1001' Const='True'/>
+      <NormFactor Name='nevents' Val='0.000025' Low='0' High='1'/>
+    </Sample>
+  </Channel>

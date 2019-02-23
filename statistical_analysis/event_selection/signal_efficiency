@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+from numpy import linspace
+import matplotlib.pyplot as plt
+from ROOT import gDirectory, TFile
+
+def signal_efficiency (cut_ID, run, hist, nevents):
+  """ Assuming .root file opened, access directory
+  to calculate signal efficiency of a single event.
+  cut_ID: string
+  run: int
+  hist: string
+  nevents: int
+  """
+  gDirectory.cd("/{}/signal/run_{}".format(cut_ID, run))
+  mwp_signal = gDirectory.Get("mwp_signal")
+  nselected = mwp_signal.GetEntries()
+  return float(nselected)/nevents
+
+def plot_signal_efficiency (
+  filename, cut_ID, run_start, run_end,
+  mass_low, mass_high,
+  hist, nevents):
+  """ Plot signal efficiency of multiple runs. """
+  
+  infile = TFile.Open(filename)
+  eff = []
+  for i in range(run_start, run_end):
+    res = signal_efficiency(cut_ID, i, hist, nevents)
+    eff.append(res)
+
+  mass = linspace(mass_low, mass_high, run_end-run_start, True)
+  plt.plot(mass, eff)
+  return plt
+
+plot_signal_efficiency("data2.root", "02045710114320325", 1, 17, 300, 1900, "mwp_signal", 40000)
+plot_signal_efficiency("data_MET100.root", "020457101143203100", 1, 17, 300, 1900, "mwp_signal", 40000)
+plt.show()

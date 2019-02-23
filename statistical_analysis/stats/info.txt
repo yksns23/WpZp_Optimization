@@ -1,0 +1,5 @@
+stats_##.C is simply a generic C macro to implement statistics
+
+Some versions may not work. That is why they are named generically; they are sort of a under-construction type of programs.
+
+Once I have a version that is fully working, I wil change its name and put it into the appropriate folder accordingly.
