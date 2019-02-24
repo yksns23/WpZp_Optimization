@@ -11,12 +11,16 @@ Output: One file (.root) containing histograms and cut&event information
         (will open and edit)
 
 In terminal, type:
-python event_selection [channel] [run-start] [run-end] [tag] [output]
+python event_selection [channel] [run-start] [run-end] [tag] [btag] [non_b] [mw_low] [mw_up] [mt_low] [mt_up] [met] ([output])
+
 
 [channel]: enter whether signal, background, specify channel, etc.
 [run-start] [run-end]: enter run # (e.g. 1 20  if run 01-20)
 [tag]: enter tag # (e.g. 1 if tag_1)
+[btag] ... [met]: cut values (if not specified, sample values will be given)
 [output]: enter output file name (e.g. "myresults.root")
+          IF not specified, "data_{cutID}.root"
+   
 """
 ############## Modules ####################
 from sys import argv, exit
@@ -45,14 +49,24 @@ MT, MW = 1.730000e+02, 7.982436e+01
 ### reconstruct.wpCut object ###
 # Purpose of this object is to store cut info
 
+# Default values
+val = [2,2,30,30,20,20,50] #btag, non_b, mw_low, mw_up, mt_low, mt_up, met
+
+# Given values
+if len(argv) > 5:
+  for i in range(5, len(argv)):
+    if i > 11:
+      break
+    val[i-5] = argv[i]
+
 CUT = wpCut()
-CUT.setBTag(2) # 2 b-tagged jets
-CUT.setNonBJet(2) # 2 non-b-tagged jets
-CUT.setMWBosonLower(MW - 22)
-CUT.setMWBosonUpper(MW + 22)
-CUT.setMTopQuarkLower(MT - 30)
-CUT.setMTopQuarkUpper(MT + 30)
-CUT.setMETLower(100)
+CUT.setBTag(val[0])
+CUT.setNonBJet(val[1]) # 2 non-b-tagged jets
+CUT.setMWBosonLower(MW - val[2])
+CUT.setMWBosonUpper(MW + val[3])
+CUT.setMTopQuarkLower(MT - val[4])
+CUT.setMTopQuarkUpper(MT + val[5])
+CUT.setMETLower(val[6])
 CUT.updateID()
 
 #############################################################################
@@ -66,12 +80,21 @@ def main(*argv):
 
   ############## Read Input *argv ################
   # Input arguments
-  if len(argv) < 6:
+  if len(argv) < 5:
     print INFORMATION
     exit(1)
+  elif len(argv) < 13:
+    channel, run_start, run_end, tag =\
+    argv[1], argv[2], argv[3], argv[4]
+    output = "data_{}.root".format(CUT.cutID)
   else:
     channel, run_start, run_end, tag, output =\
-    argv[1], argv[2], argv[3], argv[4], argv[5]
+    argv[1], argv[2], argv[3], argv[4], argv[12]
+
+  ############## Display Cut Info ################
+  print "----------Starting process-----------\nCut information:"
+  CUT.displayCutInfo()
+  print "\n"
 
   ############## Create Output File ##############
   outputFile = ROOT.TFile(output, "UPDATE")
@@ -144,6 +167,6 @@ if __name__ == "__main__":
 #############################################################################
 
 # Close program?
-user_input = None
-while user_input != "n":
-  user_input = raw_input ("To continue, press \"n\" key followed by <Enter>: ")
+#user_input = None
+#while user_input != "n":
+#  user_input = raw_input ("To continue, press \"n\" key followed by <Enter>: ")

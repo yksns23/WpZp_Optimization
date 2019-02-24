@@ -1,17 +1,17 @@
 
-<!-- Single channel configuration for run_2 -->
+<!-- Single channel configuration for run_3 -->
 
 <!DOCTYPE Channel  SYSTEM 'HistFactorySchema.dtd'>
 
-  <Channel Name="run2_mwp400" InputFile="datafiles/data_020457101143203100_binfit.root" >
+  <Channel Name="run3_mwp500" InputFile="datafiles/data_02045710114320350.root" >
 
     <!-- Set the StatError type to Poisson. -->
     <StatErrorConfig RelErrorThreshold="0.05" ConstraintType="Poisson" />
 
     <!-- Signal -->
-    <Sample Name="signal" HistoPath="/020457101143203100/signal/run_2/" HistoName="snormed" NormalizeByTheory="True">
+    <Sample Name="signal" HistoPath="/02045710114320350/signal/run_3/" HistoName="snormed" NormalizeByTheory="True">
       <OverallSys Name="syst0" Low="0.998" High="1.002" />
-      <NormFactor Name="sXsec" Val="5.11e-02" Low="0" High="1"  />
+      <NormFactor Name="sXsec" Val="4.519e-02" Low="0" High="1"  />
     </Sample>
 
     <!-- Background -->

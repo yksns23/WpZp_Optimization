@@ -1,0 +1,35 @@
+#!/bin/bash 
+
+function create_top_config() {
+# args: (1)cut_id
+
+declare -a masses=(300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900)
+declare -a cross_sections=(4.91e-02 5.11e-02 4.519e-02 3.827e-02 3.2e-02 2.662e-02 2.212e-02 1.844e-02 1.535e-02 1.279e-02 1.072e-02 8.986e-03 7.514e-03 6.294e-03 5.292e-03 4.441e-03 3.733e-03)
+# Corresponding cross sections scaled by 1000 (pb -> fb)
+
+xml="create_workspace/config/wpzp_config_$1.xml"
+
+mkdir -p create_workspace/config/$1
+cat << EndXML > $xml
+
+<!-- run hist2workspace config/filename.xml -->
+
+<!DOCTYPE Combination  SYSTEM 'HistFactorySchema.dtd'>
+
+<Combination OutputFilePrefix="./results/data_cut$1/wpzp" >
+EndXML
+
+for file in create_workspace/config/$1./wpzp_mwp*; do
+  echo "<Input>./config/$1/$file</Input>" >> $xml
+
+cat << EndXML >> $xml
+  <Measurement Name="mwp" Lumi="65." LumiRelErr="0.05" >
+    <POI>sXsec</POI>
+    <ParamSetting Const="True">Lumi alpha_syst0 alpha_syst1</ParamSetting>
+  </Measurement>
+
+</Combination>
+EndXML
+}
+
+

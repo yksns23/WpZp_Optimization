@@ -7,6 +7,7 @@
 #include "TTree.h"
 #include "TTreeReader.h"
 #include "TGraphErrors.h"
+#include "TMultiGraph.h"
 
 TGraphErrors * signif ( const char* infile,
                         const char* tntuple ); // Return graph pointer
@@ -21,12 +22,16 @@ void multigraph_signif (const char* infile1,
                         const char* infile5,
                         const char* tntuple); 
 
+
+
+
+// -------------------------------------------------------------
 // -------------------------------------------------------------
 TGraphErrors * signif ( const char* infile,
                         const char* tntuple="significance"){
   // Open File
+  if (!infile) return 0;
   TFile *file = TFile::Open(infile, "READ");
-  if (!file) return 0;
 
   // Set TTreeReader and variables
   TTreeReader reader(tntuple, file);
@@ -105,7 +110,7 @@ void multigraph_signif (const char* infile1,
                         const char* infile5=0,
                         const char* tntuple="significance"){
   // New TMultiGraph object
-  TMultiGraph *multigraph = new TMultigraph();  // ??????????????
+  TMultiGraph *multigraph = new TMultiGraph();
 
   TGraphErrors *gr1 = signif(infile1, tntuple);
   TGraphErrors *gr2 = signif(infile2, tntuple);
@@ -113,4 +118,18 @@ void multigraph_signif (const char* infile1,
   TGraphErrors *gr4 = signif(infile4, tntuple);
   TGraphErrors *gr5 = signif(infile5, tntuple);
 
-  if (!gr1) multigraph->Add(gr1, //specifications);
+  if (gr1) multigraph->Add(gr1);
+  if (gr2) multigraph->Add(gr2);
+  if (gr3) multigraph->Add(gr3);
+  if (gr4) multigraph->Add(gr4);
+  if (gr5) multigraph->Add(gr5);
+
+  // Draw
+  TCanvas *cg = new TCanvas("cg", "cg");
+  TPad *p1 = new TPad("p1", "p1", 0, 0, 1, 1);
+  p1->Draw();
+
+  p1->cd();
+  multigraph->Draw();
+  cg->Update();
+}

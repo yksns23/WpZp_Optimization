@@ -1,12 +1,31 @@
 // Normalize histograms to unity
 // to represent PDF
-#include "TFile.h"
-#include "TH1.h"
-#include "TH1F.h"
+#include <TFile.h>
+#include <TH1.h>
+#include <TH1D.h>
+#include <iostream>
+#include <string>
+#include <cstdlib>
 
-using namespace std;
+void norm_background (   const char*  infile,
+                              string  cut_id,
+                              string  bchannel1,
+                            double_t  bxsec1,
+                              string  bchannel2,
+                            double_t  bxsec2,
+                              string  bchannel3,
+                            double_t  bxsec3    );
 
-void norm_background (   const char* infile,
+void normalize_signal (  const char*  infile,
+                              string  cut_id,
+                                 int  run,
+                              string  schannel );
+
+
+
+
+
+void norm_background (   const char*  infile,
                               string  cut_id,
                               string  bchannel1="background_tbZ",
                             double_t  bxsec1=0.001167,
@@ -19,7 +38,7 @@ void norm_background (   const char* infile,
   //----- Get file in update mode -----//
   TFile *file = TFile::Open(infile, "UPDATE");
   if(!file){
-    cout << "File not found\nBye" << endl;
+    std::cout << "Info in normhist.C: norm_background --> File not found\nBye" << std::endl;
     return;
   }
   
@@ -69,38 +88,26 @@ void norm_background (   const char* infile,
   file->Close();
 }
 
-// As for signal, we only need to normalize by eff
-// eff = Nevents/NGenEvents
-// count = xsec(poi) * Lumi * eff
-//       = xsec(poi) * Lumi * bincontent/NGenEvents
-// So, here we only need to scale by 1/NGenEvents
 
-void normalize_signal   ( const char* infile,
-                              string  cut_id,
-                                 int  run,
-                              string  schannel="signal"){
+void norm_signal   (  const char*  infile,
+                           string  cut_id,
+                              int  run,
+                           string  schannel="signal"){
 
   //----- Get file in update mode -----//
   TFile *file = TFile::Open(infile, "UPDATE");
   if(!file){
-    cout << "File not found\nBye" << endl;
+    std::cout << "Info in normhist.C: norm_signal --> File not found\nBye" << std::endl;
     return;
   }
 
   // Get historgram
-  string dir = "/" + cut_id + "/" + schannel + "/run_" + to_string(run);
+  string dir = "/" + cut_id + "/" + schannel + "/run_" + std::to_string(run);
   string shist = "mwp_" + schannel;
 
   gDirectory->cd((const char*) dir.c_str());
   TH1 *sig = dynamic_cast<TH1*>(gDirectory->Get((const char*)shist.c_str()));
   if (sig->GetSumw2N() == 0) sig->Sumw2(kTRUE);
-
-  /*int nbins = sig->GetNbinsX();
-  double_t low = sig->GetXaxis()->GetBinLowEdge(1);
-  double_t high = sig->GetXaxis()->GetBinUpEdge(nbins);
-  TH1 *snormed = new TH1D("snormed", "snormed", nbins, low, high);
-
-  snormed->Add(sig, 1/NGenEvents);*/
 
   TH1 *snormed = (TH1*) sig->Clone();
   snormed->Scale(1/(snormed->Integral())); // Scale
@@ -110,4 +117,24 @@ void normalize_signal   ( const char* infile,
   snormed->SetNameTitle("snormed", "snormed");
   snormed->Write("snormed",TObject::kOverwrite);
   file->Close();
+}
+
+
+
+
+int main(int argc, char* argv[]){
+  if (argc < 5){
+    std::cout << "Usage: " << argv[0] << " [filename] [cutID] [signal_run_start] [signal_run_end]" << std::endl;
+  return 1;
+  }
+  const char* filename = argv[1];
+  string cutID = std::string(argv[2]);
+  char *p;
+  int run_start = strtol(argv[3], &p, 10);
+  int run_end = strtol(argv[4], &p, 10);
+  norm_background(argv[1], argv[2]);
+
+  for (int run = run_start; run <= run_end; run++){
+    norm_signal(filename, cutID, run);
+  }
 }

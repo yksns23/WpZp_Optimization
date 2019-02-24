@@ -68,6 +68,11 @@ class wpCut:
     CutInfo["METLower"] = self.MET
     return CutInfo
 
+  def displayCutInfo(self):
+    information = self.getCutInfo()
+    for key, value in information.items():
+      print "{} = {}".format(key, value)
+
 ### Functions ###
 def mass_info (tag, *pid):
   " Displays current event mass information. "
@@ -261,7 +266,7 @@ MT=1.730000e+02, MW=7.982436e+01):
   # Top Quark Reconstructed Mass
   mtHist = ROOT.TH1F("mt", "M_{bW+}", 50, 0.0, 500)
   # Wp Reconstructed Mass
-  mwpHist = ROOT.TH1F("mwp_"+event_type, "M_{tb}", 25, 175, 800)
+  mwpHist = ROOT.TH1F("mwp_"+event_type, "M_{tb}", 29, 175, 900)
   # MET
   METHist = ROOT.TH1F("Missing Transverse Energy", "MET", 100, 0.0, 1000)
   
