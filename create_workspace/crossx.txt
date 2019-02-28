@@ -1,0 +1,39 @@
+<signal>
+run_#	mwp	crossx		error
+1	300	4.91e-05	6.6e-08
+2	400	5.11e-05	6.6e-08
+3	500	4.519e-05	5.6e-08
+4	600	3.827e-05	6.3e-08
+5	700	3.2e-05		6.6e-08		
+6	800	2.662e-05	4.8e-08
+7	900	2.212e-05	4.3e-08
+8	1000	1.844e-05	3.4e-08
+9	1100	1.535e-05	2.9e-08
+10	1200	1.279e-05	2.5e-08
+11	1300	1.072e-05	2.1e-08
+12	1400	8.986e-06	1.6e-08
+13	1500	7.514e-06	1.4e-08
+14	1600	6.294e-06	1.3e-08
+15	1700	5.292e-06	8.7e-09
+16	1800	4.441e-06	7.8e-09
+17	1900	3.733e-06	6.7e-09
+
+<background_ttxZ_4j2b2vl>
+run_#	crossx		error
+1	0.04719		7.6e-05
+
+<background_ttxZ_lvl2j2b2vl>
+run_#	crossx		error
+1	0.0316		5.3e-05
+
+<background_tbZ>
+run_#	crossx		error
+1	0.001167	1.5e-06
+
+<background_jjbbxZ>
+run_#	crossx		error
+1	50.94		0.061
+
+<background_ttbbxlvl>
+run_#	crossx		error
+1	46.57		0.051

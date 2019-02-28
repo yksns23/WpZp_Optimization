@@ -1,25 +1,40 @@
-// A lightweight calculator for local_p values (final)
+// A lightweight calculator for significance values (final)
 
-#include "TFile.h"
-#include "RooDataHist.h"
-#include "RooRealVar.h"
-#include "RooDataSet.h"
+#include <iostream>
+#include <cstdlib>
 
-#include "RooWorkspace.h"
-#include "RooStats/ModelConfig.h"
-#include "RooStats/HypoTestCalculatorGeneric.h"
-#include "RooStats/FrequentistCalculator.h"
-#include "RooStats/ToyMCSampler.h"
-#include "RooStats/HypoTestResult.h"
+#include <TFile.h>
+#include <TNtuple.h>
+#include <RooDataHist.h>
+#include <RooRealVar.h>
+#include <RooDataSet.h>
+
+#include <RooWorkspace.h>
+#include <RooStats/ModelConfig.h>
+#include <RooStats/HypoTestCalculatorGeneric.h>
+#include <RooStats/FrequentistCalculator.h>
+#include <RooStats/ToyMCSampler.h>
+#include <RooStats/HypoTestResult.h>
+#include <RooStats/ProfileLikelihoodTestStat.h>
 
 using namespace RooFit;
 using namespace RooStats;
 
+void sigma (    const char* infile,
+                const char* mwp,
+                const char* workspace_name,
+                const char* outfile,
+                const char* sbmodel_name,
+                const char* bmodel_name,
+                const char* data_name     );
+
+
+
 // Frequentist p value calculator
-void local_p (  const char* infile,
-                double_t    mwp,
-                const char* outfile = "local_p.root",
+void sigma (    const char* infile,
+                const char* mwp,
                 const char* workspace_name = "combined",
+                const char* outfile = "sigma.root",
                 const char* sbmodel_name = "ModelConfig",
                 const char* bmodel_name = "",
                 const char* data_name = "asimovData"){
@@ -106,24 +121,34 @@ void local_p (  const char* infile,
   delete profll;
   delete hc;
 
-  /*
-  result->Print();
-
-  // Plot
-  HypoTestPlot *plot = new HypoTestPlot(*result, 100);
-  plot->SetLogYaxis(true);
-  plot->Draw();
-  */
-
   //----- Store Results -----//
-  // Create ROOT file
+  // Create ROOT file and store resulting data into tntuple 
   TFile *output = TFile::Open(outfile, "UPDATE");
-  TNtuple *p_values = (TNtuple*) output->Get("significance");
-  if (!p_values){
+  TNtuple *results = (TNtuple*) output->Get("significance");
+  if (!results){
     TNtuple *tnt = new TNtuple("significance", "significance", "mwp:significance:sig_error:p_value:p_error");
-    p_values = tnt;
+    results = tnt;
   }
-  p_values->Fill((float_t) mwp, (float_t) significance, (float_t) significance_error, (float_t) p_value, (float_t) p_error);
-  p_values->Write();
+  results->Fill((float_t) atof(mwp), (float_t) significance, (float_t) significance_error, (float_t) p_value, (float_t) p_error);
+  results->Write("significance",TObject::kOverwrite);
   output->Close();
-}	
+  file->Close();
+}
+
+
+
+
+
+int main(int argc, char* argv[]){
+  if (argc < 3){
+    std::cout << "Usage: " << argv[0] << " [infile] [mwp] (optional: [workspace] [outfile] [sbmodel] [bmodel] [data])" << std::endl;
+  return 1;
+  }
+  // Only first two arguments are required; hence the following
+  else if (argc == 3) sigma(argv[1], argv[2]);
+  else if (argc == 4) sigma(argv[1], argv[2], argv[3]);
+  else if (argc == 5) sigma(argv[1], argv[2], argv[3], argv[4]);
+  else if (argc == 6) sigma(argv[1], argv[2], argv[3], argv[4], argv[5]);
+  else sigma(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+  return 0;
+}

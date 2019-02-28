@@ -8,7 +8,6 @@
 # 5. Create .xml config files
 # 6. hist2workspace .xml files
 # 7. Resulting workspace file (.root) opened and statistical analysis performed
-# 8. Visualize result
 
 # Save this directory, since it'll return to it later
 thisdir=$(pwd)
@@ -17,7 +16,7 @@ thisdir=$(pwd)
 # User input
 echo "Type run_start run_end for your signal"
 read v1 v2
-echo "\nType cut information: BTag nonBJet MWLow MWHigh MTLow MTHigh MET"
+echo "Type cut information: BTag nonBJet MWLow MWHigh MTLow MTHigh MET"
 read v3 v4 v5 v6 v7 v8 v9
 
 cutid=$v3$v4$v5$v6$v7$v8$v9
@@ -32,26 +31,38 @@ python event_selection/event_selection background_tbZ 1 1 1
 python event_selection background_ttxZ_4j2b2vl 1 1 1
 python event_selection background_ttxZ_lvl2j2b2vl 1 1 1
 
-###### Step 3 ########
+####### Step 3 #######
 # Save the .root file both to MG5/selection_results and datafiles
 datafile="data_$cutid.root"
 find . -maxdepth 1 -type f -name $datafile -exec cp -t selection_results {} \; -exec mv -t $this_dir/create_workspace/datafiles {} \;
 
 cd $this_dir
 
-###### Step 4 ########
+####### Step 4 #######
 # Open the .root file in datafiles and normalize histograms
-./normhist create_workspace/datafiles/$datafile $cutid $v1 $v2
+./normhist /create_workspace/datafiles/$datafile $cutid $v1 $v2
 
-###### Step 5 ########
-# Create channel
+####### Step 5 #######
+# Create channels
 ./create_channel
 for (( run=((v1)); run<=((v2)); run++ )); do
   create_xml_channel $run $datafile $cutid
 done
+
 # Create top-level config
 ./create_top_config
 create_top_config $cutid
 
+####### Step 6 #######
+# Run hist2workspace
+hist2workspace create_workspace/config/wpzp_config_$cutid
 
+####### Step 7 #######
+# Open workspace files and perform statistical analysis
+declare -a masses=(300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900)
+for (( run=((v1)); run<=((v2)); run++ )); do
+  mwp=$masses[(($run-1))]
+  infile="results/data_cut$cutid/wpzp_run$run\_mwp$mwp"
+  outfile="sigma_results/signif_cut$cutid.root"
+  ./sigma $infile $mwp "run$run_\_mwp400" $outfile
 
