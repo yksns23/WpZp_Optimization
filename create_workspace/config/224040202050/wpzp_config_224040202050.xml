@@ -1,0 +1,18 @@
+
+<!-- run hist2workspace config/filename.xml -->
+
+<!DOCTYPE Combination  SYSTEM 'HistFactorySchema.dtd'>
+
+<Combination OutputFilePrefix="./create_workspace/results/data_cut224040202050/wpzp" >
+<Input>./create_workspace/config/224040202050/wpzp_mwp300.xml</Input>
+<Input>./create_workspace/config/224040202050/wpzp_mwp400.xml</Input>
+<Input>./create_workspace/config/224040202050/wpzp_mwp500.xml</Input>
+<Input>./create_workspace/config/224040202050/wpzp_mwp600.xml</Input>
+<Input>./create_workspace/config/224040202050/wpzp_mwp700.xml</Input>
+<Input>./create_workspace/config/224040202050/wpzp_mwp800.xml</Input>
+  <Measurement Name="mwp" Lumi="65." LumiRelErr="0.05" >
+    <POI>sXsec</POI>
+    <ParamSetting Const="True">Lumi alpha_syst0 alpha_syst1</ParamSetting>
+  </Measurement>
+
+</Combination>

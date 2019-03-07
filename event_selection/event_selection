@@ -39,11 +39,12 @@ except:
   pass
 
 ######### Set Default Parameters ##########
+# declare masses of top quark and W boson
+global MT, MW
+MT, MW = 1.730000e+02, 7.982436e+01
+
 # Particles of interest. Enter PID:
 PID = [9916663, 9906663, 9926662]   # wp, zp, n1
-
-# Mass of top quark and W+ Boson
-MT, MW = 1.730000e+02, 7.982436e+01
 
 ############# Set Cut #####################
 ### reconstruct.wpCut object ###
@@ -57,15 +58,15 @@ if len(argv) > 5:
   for i in range(5, len(argv)):
     if i > 11:
       break
-    val[i-5] = argv[i]
+    val[i-5] = int(argv[i])
 
 CUT = wpCut()
 CUT.setBTag(val[0])
 CUT.setNonBJet(val[1]) # 2 non-b-tagged jets
-CUT.setMWBosonLower(MW - val[2])
-CUT.setMWBosonUpper(MW + val[3])
-CUT.setMTopQuarkLower(MT - val[4])
-CUT.setMTopQuarkUpper(MT + val[5])
+CUT.setMWBosonLower(val[2])
+CUT.setMWBosonUpper(val[3])
+CUT.setMTopQuarkLower(val[4])
+CUT.setMTopQuarkUpper(val[5])
 CUT.setMETLower(val[6])
 CUT.updateID()
 
@@ -94,7 +95,6 @@ def main(*argv):
   ############## Display Cut Info ################
   print "----------Starting process-----------\nCut information:"
   CUT.displayCutInfo()
-  print "\n"
 
   ############## Create Output File ##############
   outputFile = ROOT.TFile(output, "UPDATE")
@@ -114,7 +114,7 @@ def main(*argv):
     event_type = channel
 
   for i in range(int(run_start), int(run_end)+1):
-    print "Now starting run_{:02d}...".format(i)
+    print "\nNow starting run_{:02d}...".format(i)
 
     directory = "data/"+event_type+"/Events/run_{:02d}/".format(i)
     inputfile = "tag_{}_delphes_events.root".format(tag)
@@ -151,14 +151,13 @@ def main(*argv):
     
     print "  Congrats! run_{:02d} is now completed".format(i)
     if i+1 < int(run_end):
-      print "  Moving on to run_{:02d} ...\n".format(i+1)
-    else:
-      print "\n ------- All process finished ------- \n"
+      print "  Moving on to run_{:02d} ...".format(i+1)
 
   end_time = clock()
 
   ### Run time
   print "Total run time: {:.3f} seconds".format(end_time - start_time)
+  print "-------- All process finished --------\n"
 
 if __name__ == "__main__":
   main(*argv)

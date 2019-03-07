@@ -1,0 +1,22 @@
+
+<!-- Single channel configuration for run_3 -->
+
+<!DOCTYPE Channel  SYSTEM 'HistFactorySchema.dtd'>
+
+  <Channel Name="run3_mwp500" InputFile="./create_workspace/datafiles/data_214040505050.root" >
+
+    <!-- Set the StatError type to Poisson. -->
+    <StatErrorConfig RelErrorThreshold="0.05" ConstraintType="Poisson" />
+
+    <!-- Signal -->
+    <Sample Name="signal" HistoPath="/214040505050/signal/run_3/" HistoName="snormed" NormalizeByTheory="True">
+      <OverallSys Name="syst0" Low="0.998" High="1.002" />
+      <NormFactor Name="sXsec" Val="4.519e-02" Low="0" High="1"  />
+    </Sample>
+
+    <!-- Background -->
+    <Sample Name="bcombined" HistoPath="" HistoName="bcombined" NormalizeByTheory="True" >
+      <OverallSys Name="syst1" Low='0.99' High='1.01'/>
+    </Sample>
+
+  </Channel>

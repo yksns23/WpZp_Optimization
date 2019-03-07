@@ -7,30 +7,31 @@ class wpCut:
   """ Object to store all information for the cuts
   for event selection of the following process:
   p p > wp zp, (wp > t b, (t > w b, (w > j j))), zp > n1 n1 """
-  
-  # Unique identifier for each cut
-  # Invoke updateID method
-  cutID = ""
 
   def __init__ (self):
+    # Mass of top quark and W+ Boson
+    global MT, MW
+    MT, MW = 1.730000e+02, 7.982436e+01
+    self.cutID = "nocut" # Unique identifier for each cut
     self.btag = 0 # Number of b-tagged jet(s)
     self.nonbjet = 0  # Number of non-b-tagged jet(s)
     self.jet = 0 # Number of total jet(s)
-    self.mw_lower = -1e06
-    self.mw_upper = 1e06
-    self.mt_lower = -1e06
-    self.mt_upper = 1e06
+    self.mw_min = -1e06
+    self.mw_max = +1e06
+    self.mt_min = -1e06
+    self.mt_max = 1e06
     self.MET = 0 # MET >= # GeV
+    self.mw_lower = None  # mw_min = MW - mw_lower
+    self.mw_upper = None  # mw_max = MW + mw_upper
+    self.mt_lower = None  # mt_min = MT - mt_lower
+    self.mt_upper = None  # mt_max = MT + mt_upper
 
   def updateID(self):
-    self.cutID = "{:02d}{:02d}{:02d}{:02d}{:02d}{:02d}{:02d}"\
-    .format(int(self.btag), int(self.jet),\
+    self.cutID = "{:01d}{:01d}{:01d}{:01d}{:01d}{:01d}{:02d}"\
+    .format(int(self.btag), int(self.nonbjet),\
     int(self.mw_lower), int(self.mw_upper),\
     int(self.mt_lower), int(self.mt_upper),\
     int(self.MET))
-
-  def setTotalJet(self, jet):
-    self.jet = jet
 
   def setBTag(self, btag):
     self.btag = btag
@@ -42,15 +43,19 @@ class wpCut:
 
   def setMWBosonLower(self, mw_lower):
     self.mw_lower = mw_lower
+    self.mw_min = MW - mw_lower
 
   def setMWBosonUpper(self, mw_upper):
     self.mw_upper = mw_upper
+    self.mw_max = MW + mw_upper
 
   def setMTopQuarkLower(self, mt_lower):
     self.mt_lower = mt_lower
+    self.mt_min = MT - mt_lower
 
   def setMTopQuarkUpper(self, mt_upper):
     self.mt_upper = mt_upper
+    self.mt_max = MT + mt_upper
 
   def setMETLower(self, MET):
     self.MET = MET
@@ -70,8 +75,16 @@ class wpCut:
 
   def displayCutInfo(self):
     information = self.getCutInfo()
-    for key, value in information.items():
-      print "{} = {}".format(key, value)
+    print "cutID = {}".format(information["cutID"])
+    print "totalJet = {}".format(information["totalJet"])
+    print "BTagJet = {}".format(information["BTagJet"])
+    print "NonBTagJet = {}".format(information["NonBTagJet"])
+    print "MWLower = {}".format(information["MWLower"])
+    print "MWUpper = {}".format(information["MWUpper"])
+    print "MTLower = {}".format(information["MTLower"])
+    print "MTUpper = {}".format(information["MTUpper"])
+    print "METLower = {}".format(information["METLower"])
+
 
 ### Functions ###
 def mass_info (tag, *pid):
@@ -326,17 +339,17 @@ MT=1.730000e+02, MW=7.982436e+01):
     #                       candidate, jet list w/o candidate
     if cut.nonbjet == 1:
       W_boson, non_btagged_jets = single_jet_mass_fit(
-        MW, non_btagged_jets, cut.mw_lower, cut.mw_upper)
+        MW, non_btagged_jets, cut.mw_min, cut.mw_max)
     elif cut.nonbjet == 2:
       W_boson, non_btagged_jets = double_jet_mass_fit(
-        MW, non_btagged_jets, cut.mw_lower, cut.mw_upper)
+        MW, non_btagged_jets, cut.mw_min, cut.mw_max)
     if W_boson == None:
       continue
     mwHist.Fill(W_boson.M())  # Fill W+ histogram
 
     # Reconstruct top quark
     top_quark, btagged_jets = single_jet_mass_fit(
-      MT, btagged_jets, cut.mt_lower, cut.mt_upper, W_boson)
+      MT, btagged_jets, cut.mt_min, cut.mt_max, W_boson)
     if top_quark == None:
       continue
     mtHist.Fill(top_quark.M())
