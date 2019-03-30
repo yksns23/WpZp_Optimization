@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+
+from numpy import linspace
+import matplotlib.pyplot as plt
+from ROOT import gDirectory, TFile
+from sys import argv
+
+def signal_efficiency (cut_ID, run, nevents):
+  """ Assuming .root file opened, access directory
+  to calculate signal efficiency of a single event.
+  cut_ID: string
+  run: int
+  nevents: int
+  """
+  gDirectory.cd("/{}/signal/run_{}".format(cut_ID, run))
+  mwp_signal = gDirectory.Get("mwp_signal")
+  nselected = mwp_signal.GetEntries()
+  return float(nselected)/nevents
+
+def plot_signal_efficiency (
+  filename, cut_ID, run_start, run_end,
+  mass_low, mass_high, nevents=40000):
+  """ Plot signal efficiency of multiple runs. """
+  
+  infile = TFile.Open(filename) # .root file
+  eff = []  # List of efficiencies (float)
+  for i in range(run_start, run_end):
+    ratio = signal_efficiency(cut_ID, i, nevents)
+    eff.append(ratio)
+
+  # Plot on pyplot object
+  fig = plt.figure()
+  ax = fig.add_subplot(111)
+
+  mass = linspace(mass_low, mass_high, run_end-run_start, True) # x axis is mass
+  plt.plot(mass, eff) # y axis is efficiency
+  plt.title("Signal efficiency per W' mass")
+  plt.xlabel("W' mass [GeV]")
+  plt.ylabel("efficiency")
+  plt.ylim(0.0, 0.1)  # Range of efficiency plot (please adjust as needed)
+
+  # Show data value on each point
+  for i, j in zip(mass, eff):
+    ax.annotate('{:.3f}'.format(j), xy=(i,j), xytext=(-12,7), textcoords='offset points')
+
+  return plt
+
+
+# Main function takes in argv and passes into plot_signal_efficiency
+def main():
+  if len(argv) <= 2:
+    print "USAGE: python signal_efficiency filename cut_ID run_start run_end mass_low mass_high nevents"
+  elif len(argv) == 7:
+    histplot = plot_signal_efficiency(argv[1], argv[2], int(argv[3]), int(argv[4]), float(argv[5]), float(argv[6]))
+    histplot.show()
+  elif len(argv) > 7:
+    histplot = plot_signal_efficiency(argv[1], argv[2], int(argv[3]), int(argv[4]), float(argv[5]), float(argv[6]), int(argv[7]))
+    histplot.show()
+  else:
+    print "Not enough arguments given"
+  return
+
+if __name__=="__main__":
+  main()
