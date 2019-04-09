@@ -20,10 +20,10 @@ python event_selection [channel] [run-start] [run-end] [tag] [btag] [non_b] [mw_
 [btag] ... [met]: cut values (if not specified, sample values will be given)
 [output]: enter output file name (e.g. "myresults.root")
           IF not specified, "data_{cutID}.root"
-   
 """
 ############## Modules ####################
 from sys import argv, exit
+from os import mkdir
 import ROOT
 from reconstruct import *
 from time import clock
@@ -62,7 +62,7 @@ if len(argv) > 5:
 
 CUT = wpCut()
 CUT.setBTag(val[0])
-CUT.setNonBJet(val[1]) # 2 non-b-tagged jets
+CUT.setNonBJet(val[1])
 CUT.setMWBosonLower(val[2])
 CUT.setMWBosonUpper(val[3])
 CUT.setMTopQuarkLower(val[4])
@@ -148,6 +148,15 @@ def main(*argv):
     ntuple = ROOT.TNtuple("ntuple", "event info", var_list)
     ntuple.Fill(*event_info.values())
     ntuple.Write()
+
+    # Store TCanvas displaying the histograms
+    ROOT.gDirectory.cd("/")
+    canvas = canvas_draw(channel+"_run_"+str(i), mwHist, mtHist, mwpHist, METHist) # Def. in reconstruct.py
+    canvas.Write()
+
+    # Save Canvas to a PDF file
+    mkdir(CUT.cutID)
+    canvas.Print("diagrams_{1}/{0}_{1}.jpg".format(channel, CUT.cutID))
     
     print "  Congrats! run_{:02d} is now completed".format(i)
     if i+1 < int(run_end):

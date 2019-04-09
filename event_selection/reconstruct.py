@@ -15,7 +15,7 @@ class wpCut:
     self.cutID = "nocut" # Unique identifier for each cut
     self.btag = 0 # Number of b-tagged jet(s)
     self.nonbjet = 0  # Number of non-b-tagged jet(s)
-    self.jet = 0 # Number of total jet(s)
+    self.jet = 0 # MINIMUM number of total jet(s)
     self.mw_min = -1e06
     self.mw_max = +1e06
     self.mt_min = -1e06
@@ -206,6 +206,56 @@ def double_jet_mass_fit (
     return jet1+jet2+other_products, list_of_jets
   # End of function def double mass fit
 
+
+
+def single_double_jet_mass_fit (
+    target_mass, list_of_jets,
+    lower_bound=float('-inf'), upper_bound=float('inf')):
+  """ Find either single or double jet that
+      best fits mass of W+. """
+  min_diff = upper_bound - lower_bound
+  found = False
+  strategy = None
+
+  n = len(list_of_jets)
+  if n == 0:
+    raise ValueError("Argument list_of_jets must be a list of nonzero length.")
+
+  # Single jet strategy
+  for i in range(n):
+    jet = list_of_jets[i]
+    if not (lower_bound <= jet.M() <= upper_bound):
+      continue
+    diff = abs(jet.M() - target_mass)
+    if diff < min_diff:
+      min_diff, index, found, strategy = diff, i, True, 'single'
+
+  # Double jet strategy
+  for i in range(n):
+    for j in range(i+1,n):
+      jet1 = list_of_jets[i]
+      jet2 = list_of_jets[j]
+      total = jet1 + jet2
+      if not (lower_bound <= total.M() <= upper_bound):
+        continue
+      diff = abs(total.M() - target_mass)
+      if diff < min_diff:
+        min_diff, indices, found, strategy = diff, [j,i], True, 'double'
+
+  # If neither strategy finds a W+ candidate
+  if not found:
+    return None, list_of_jets
+
+  # Compare strategies and return
+  if strategy == 'single':
+    candidate = list_of_jets.pop(index)
+    return candidate, list_of_jets
+  elif strategy == 'double':
+    jet1 = list_of_jets.pop(indices[0])
+    jet2 = list_of_jets.pop(indices[1])
+    return jet1+jet2, list_of_jets
+  # End of function def single or double mass fit
+
 ######### Function: event_information #########
 ### Get all relevant event information and return dict()
 def event_information (banner, cut, *pid_list, **param):
@@ -275,13 +325,30 @@ MT=1.730000e+02, MW=7.982436e+01):
   # for the histogram objects, to access them in bulk
   # later in statistical analysis
   # W+ Reconstructed Mass
-  mwHist = ROOT.TH1F("mw", "M_{W+}", 50, 0.0, 500)
+  if cut.nonbjet == 1:
+    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{j}", 20, 0.0, 200)
+    mwHist.SetXTitle("M_{j} [GeV]")
+    mwHist.SetYTitle("events")
+  elif cut.nonbjet == 2:
+    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{jj}", 20, 0.0, 200)
+    mwHist.SetXTitle("M_{jj} [GeV]")
+    mwHist.SetYTitle("events")
+  elif cut.nonbjet == 12:
+    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{j} or M_{jj}", 20, 0.0, 200)
+    mwHist.SetXTitle("M_{j} or M_{jj} [GeV]")
+    mwHist.SetYTitle("events")
   # Top Quark Reconstructed Mass
-  mtHist = ROOT.TH1F("mt", "M_{bW+}", 50, 0.0, 500)
+  mtHist = ROOT.TH1F("mt", "Distribution of reconstructed M_{bW}", 30, 0.0, 300)
+  mtHist.SetXTitle("M_{bW} [GeV]")
+  mtHist.SetYTitle("events")
   # Wp Reconstructed Mass
-  mwpHist = ROOT.TH1F("mwp_"+event_type, "M_{tb}", 29, 175, 900)
+  mwpHist = ROOT.TH1F("mwp_"+event_type, "Distribution of reconstructed M_{tb}", 29, 175, 900)
+  mwpHist.SetXTitle("M_{tb} [GeV]")
+  mwpHist.SetYTitle("events")
   # MET
-  METHist = ROOT.TH1F("Missing Transverse Energy", "MET", 100, 0.0, 1000)
+  METHist = ROOT.TH1F("Missing Transverse Energy", "MET", 40, 0.0, 1000)
+  METHist.SetXTitle("MET [GeV]")
+  METHist.SetYTitle("events")
   
   # Loop over each event
   for entry in range(numberOfEntries):
@@ -338,8 +405,12 @@ MT=1.730000e+02, MW=7.982436e+01):
     # reconstruct functions _jet_mass_fit returns a list:
     #                       candidate, jet list w/o candidate
     if cut.nonbjet == 1:
-      W_boson, non_btagged_jets = single_jet_mass_fit(
+    #  W_boson, non_btagged_jets = single_jet_mass_fit(
+    #  MW, non_btagged_jets, cut.mw_min, cut.mw_max)
+      # Find EITHER single or double jet
+      W_boson, non_btagged_jets = single_double_jet_mass_fit(
         MW, non_btagged_jets, cut.mw_min, cut.mw_max)
+
     elif cut.nonbjet == 2:
       W_boson, non_btagged_jets = double_jet_mass_fit(
         MW, non_btagged_jets, cut.mw_min, cut.mw_max)
@@ -364,3 +435,41 @@ MT=1.730000e+02, MW=7.982436e+01):
 
   return mwHist, mtHist, mwpHist, METHist #histograms
   # End of def event_selection
+
+######### Function: canvas_draw #########
+### Put histograms on one TCanvas and return TCanvas
+def canvas_draw (canvas_name, hist1, hist2, hist3, hist4):
+  " Put four histograms on one TCanvas and return TCanvas. "
+  c1 = ROOT.TCanvas(canvas_name, canvas_name, 50, 20, 1100, 610)
+  pad1 = ROOT.TPad(hist1.GetName(), hist1.GetTitle(), 0, 0, 0.5, 0.5)
+  pad2 = ROOT.TPad(hist2.GetName(), hist2.GetTitle(), 0, 0.5, 0.5, 1)
+  pad3 = ROOT.TPad(hist3.GetName(), hist3.GetTitle(), 0.5, 0, 1, 0.5)
+  pad4 = ROOT.TPad(hist4.GetName(), hist4.GetTitle(), 0.5, 0.5, 1, 1)
+  #textpad = ROOT.TPad("Info", " (text) ", 0.425, 0.8, 0.60, 0.98)
+  #textpad.SetFillStyle(4000)
+  pad1.Draw()
+  pad2.Draw()
+  pad3.Draw()
+  pad4.Draw()
+  #textpad.Draw()
+
+  pad1.cd()
+  hist1.Draw()
+
+  pad2.cd()
+  hist2.Draw()
+
+  pad3.cd()
+  hist3.Draw()
+
+  pad4.cd()
+  hist4.Draw()
+  """
+  textpad.cd()
+  text = ROOT.TPaveText(0.05, 0.1, 0.95, 0.9, "NB")
+  text.AddText(" (text) ")
+  text.SetFillColor(0)
+  text.Draw()
+  """
+  c1.Update()
+  return c1
