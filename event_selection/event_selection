@@ -155,7 +155,10 @@ def main(*argv):
     canvas.Write()
 
     # Save Canvas to a PDF file
-    mkdir(CUT.cutID)
+    try:
+      mkdir("diagrams_"+CUT.cutID)
+    except:
+      pass
     canvas.Print("diagrams_{1}/{0}_{1}.jpg".format(channel, CUT.cutID))
     
     print "  Congrats! run_{:02d} is now completed".format(i)

@@ -325,24 +325,26 @@ MT=1.730000e+02, MW=7.982436e+01):
   # for the histogram objects, to access them in bulk
   # later in statistical analysis
   # W+ Reconstructed Mass
+  """
   if cut.nonbjet == 1:
     mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{j}", 20, 0.0, 200)
     mwHist.SetXTitle("M_{j} [GeV]")
     mwHist.SetYTitle("events")
-  elif cut.nonbjet == 2:
-    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{jj}", 20, 0.0, 200)
-    mwHist.SetXTitle("M_{jj} [GeV]")
-    mwHist.SetYTitle("events")
-  elif cut.nonbjet == 12:
-    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{j} or M_{jj}", 20, 0.0, 200)
+  """
+  if cut.nonbjet == 1:
+    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{j} or M_{jj}", 40, 0.0, 200)
     mwHist.SetXTitle("M_{j} or M_{jj} [GeV]")
     mwHist.SetYTitle("events")
+  elif cut.nonbjet == 2:
+    mwHist = ROOT.TH1F("mw", "Distribution of reconstructed M_{jj}", 40, 0.0, 200)
+    mwHist.SetXTitle("M_{jj} [GeV]")
+    mwHist.SetYTitle("events")
   # Top Quark Reconstructed Mass
-  mtHist = ROOT.TH1F("mt", "Distribution of reconstructed M_{bW}", 30, 0.0, 300)
+  mtHist = ROOT.TH1F("mt", "Distribution of reconstructed M_{bW}", 60, 0.0, 300)
   mtHist.SetXTitle("M_{bW} [GeV]")
   mtHist.SetYTitle("events")
   # Wp Reconstructed Mass
-  mwpHist = ROOT.TH1F("mwp_"+event_type, "Distribution of reconstructed M_{tb}", 29, 175, 900)
+  mwpHist = ROOT.TH1F("mwp_"+event_type, "Distribution of reconstructed M_{tb}", 69, 175, 1900)
   mwpHist.SetXTitle("M_{tb} [GeV]")
   mwpHist.SetYTitle("events")
   # MET
