@@ -1,0 +1,76 @@
+#!/bin/bash 
+
+function create_channel_xsec_scan() {
+# args: (1)run_number (2)input_file (3)cut_id
+
+declare -a masses=(300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900)
+declare -a cross_sections=(0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.25 2.50 2.75 3.00 3.25 3.50 3.75 4.00 4.25 4.50 4.75 5.00) # Units of fb
+
+mkdir -p "create_workspace/config/${3}_xsec_scan"
+
+for (( iter=0; iter<20; iter++ )); do
+
+mwp=${masses[(($1-1))]}
+xsec=${cross_sections[(($iter))]}
+
+touch "create_workspace/config/${3}_xsec_scan/wpzp_mwp${mwp}_xsec${xsec}.xml"
+
+cat << EndXML > "create_workspace/config/${3}_xsec_scan/wpzp_mwp${mwp}_xsec${xsec}.xml"
+
+<!-- Single channel configuration for run_$1 -->
+
+<!DOCTYPE Channel  SYSTEM 'HistFactorySchema.dtd'>
+
+  <Channel Name="run$1_mwp${mwp}_xsec${xsec}" InputFile="./create_workspace/datafiles/$2" >
+
+    <!-- Set the StatError type to Poisson. -->
+    <StatErrorConfig RelErrorThreshold="0.05" ConstraintType="Poisson" />
+
+    <!-- Signal -->
+    <Sample Name="signal" HistoPath="/$3/signal/run_$1/" HistoName="snormed" NormalizeByTheory="True">
+      <OverallSys Name="syst_signal_xsec" Low="0.998" High="1.002" />
+      <NormFactor Name="sXsec" Val="$xsec" Low="0" High="5.5"  />
+    </Sample>
+
+    <!-- Background -->
+    <Sample Name="bg1" HistoPath="" HistoName="bg1" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg1_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+    <Sample Name="bg2" HistoPath="" HistoName="bg2" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg2_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+    <Sample Name="bg3" HistoPath="" HistoName="bg3" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg3_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+   <Sample Name="bg4" HistoPath="" HistoName="bg4" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg4_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+    <Sample Name="bg5" HistoPath="" HistoName="bg5" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg5_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+    <Sample Name="bg6" HistoPath="" HistoName="bg6" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg6_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+   <Sample Name="bg7" HistoPath="" HistoName="bg7" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg7_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+    <Sample Name="bg8" HistoPath="" HistoName="bg8" NormalizeByTheory="True" >
+      <OverallSys Name="syst_bg8_xsec" Low='0.75' High='1.25'/>
+    </Sample>
+
+
+  </Channel>
+EndXML
+
+done
+
+}
+
+

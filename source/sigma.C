@@ -22,6 +22,7 @@ using namespace RooStats;
 
 void sigma (    const char* infile,
                 const char* mwp,
+                const char* xsec,
                 const char* workspace_name,
                 const char* outfile,
                 const char* sbmodel_name,
@@ -33,6 +34,7 @@ void sigma (    const char* infile,
 // Frequentist p value calculator
 void sigma (    const char* infile,
                 const char* mwp,
+                const char* xsec,
                 const char* workspace_name = "combined",
                 const char* outfile = "sigma.root",
                 const char* sbmodel_name = "ModelConfig",
@@ -126,10 +128,10 @@ void sigma (    const char* infile,
   TFile *output = TFile::Open(outfile, "UPDATE");
   TNtuple *results = (TNtuple*) output->Get("significance");
   if (!results){
-    TNtuple *tnt = new TNtuple("significance", "significance", "mwp:significance:sig_error:p_value:p_error");
+    TNtuple *tnt = new TNtuple("significance", "significance", "mwp:signal_xsec:significance:sig_error:p_value:p_error");
     results = tnt;
   }
-  results->Fill((float_t) atof(mwp), (float_t) significance, (float_t) significance_error, (float_t) p_value, (float_t) p_error);
+  results->Fill((float_t) atof(mwp), (float_t) atof(xsec), (float_t) significance, (float_t) significance_error, (float_t) p_value, (float_t) p_error);
   results->Write("significance",TObject::kOverwrite);
   output->Close();
   file->Close();
@@ -140,15 +142,16 @@ void sigma (    const char* infile,
 
 
 int main(int argc, char* argv[]){
-  if (argc < 3){
-    std::cout << "Usage: " << argv[0] << " [infile] [mwp] (optional: [workspace] [outfile] [sbmodel] [bmodel] [data])" << std::endl;
+  if (argc < 4){
+    std::cout << "Usage: " << argv[0] << " [infile] [mwp] [xsec] (optional: [workspace] [outfile] [sbmodel] [bmodel] [data])" << std::endl;
   return 1;
   }
-  // Only first two arguments are required; hence the following
-  else if (argc == 3) sigma(argv[1], argv[2]);
+  // Only first three arguments are required; hence the following
   else if (argc == 4) sigma(argv[1], argv[2], argv[3]);
   else if (argc == 5) sigma(argv[1], argv[2], argv[3], argv[4]);
   else if (argc == 6) sigma(argv[1], argv[2], argv[3], argv[4], argv[5]);
-  else sigma(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+  else if (argc == 7) sigma(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+  else if (argc == 8) sigma(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+  else sigma(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
   return 0;
 }

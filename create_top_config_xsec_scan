@@ -1,0 +1,40 @@
+#!/bin/bash 
+
+function create_top_config_xsec_scan() {
+# args: (1)cut_id
+
+mkdir -p "create_workspace/config/${1}_xsec_scan"
+cp "create_workspace/config/HistFactorySchema.dtd" "create_workspace/config/${1}_xsec_scan"        # Need DTD file for the xml to work
+
+cd create_workspace/config/${1}_xsec_scan
+
+for file in wpzp_mwp*; do
+
+xml="wpzp_config_${file:5}"
+
+touch $xml
+
+cat << EndXML > $xml     # Recreate new xml file if exists
+
+<!-- run hist2workspace config/filename.xml -->
+
+<!DOCTYPE Combination  SYSTEM 'HistFactorySchema.dtd'>
+
+<Combination OutputFilePrefix="./create_workspace/results/data_cut${1}_xsec_scan/wpzp" >
+
+  <Input>./create_workspace/config/${1}_xsec_scan/$file</Input>
+
+  <Measurement Name="mwp" Lumi="65." LumiRelErr="0.05" >
+    <POI>sXsec</POI>
+    <ParamSetting Const="True">Lumi alpha_syst_signal_xsec alpha_syst_bg1_xsec alpha_syst_bg2_xsec alpha_syst_bg3_xsec alpha_syst_bg4_xsec alpha_syst_bg5_xsec alpha_syst_bg6_xsec alpha_syst_bg7_xsec alpha_syst_bg8_xsec </ParamSetting>
+  </Measurement>
+
+</Combination>
+EndXML
+
+done
+
+cd ../../..
+}
+
+
