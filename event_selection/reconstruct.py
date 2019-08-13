@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ROOT
+from sys import stdout
 
 ### Classes ###
 class wpCut:
@@ -132,11 +133,9 @@ def single_jet_mass_fit (
     raise ValueError("Argument list_of_jets must be a list of nonzero length.")
 
   other_products = ROOT.TLorentzVector() # Sum of all other particles
-  try:
+  if len(other) > 0:
     for j in other:
       other_products += j
-  except:
-    pass
 
   min_diff = upper_bound - lower_bound
   found = False
@@ -174,11 +173,12 @@ def double_jet_mass_fit (
   if n < 2:
     raise ValueError("Argument list_of_jets must have length > 1.")
   other_products = ROOT.TLorentzVector() # Sum of all other particles
-  try:
+
+  other_products = ROOT.TLorentzVector() # Sum of all other particles
+  if len(other) > 0:
     for j in other:
       other_products += j
-  except:
-    pass
+
 
   min_diff = upper_bound - lower_bound
   found = False
@@ -207,12 +207,55 @@ def double_jet_mass_fit (
   # End of function def double mass fit
 
 
+def two_jet_mass_fit (
+    target_mass, jet1_list, jet2,
+    lower_bound=float('-inf'), upper_bound=float('inf'),
+    *other):
+  """ Find two jets each from a different list
+      to fit single mass. """
+  n = len(jet_list_1)
+  m = len(jet_list_2)
+  if n < 1 or m < 1:
+    raise ValueError("List of jet arguments must have length > 0.")
+
+  other_products = ROOT.TLorentzVector() # Sum of all other particles
+  if len(other) > 0:
+    for j in other:
+      other_products += j
+
+  min_diff = upper_bound - lower_bound
+  found = False
+  for i in range(n):
+    for j in range(m):
+      jet1 = jet_list_1[i]
+      jet2 = jet_list_2[j]
+      total = jet1 + jet2 + other_products
+
+      if not (lower_bound <= total.M() <= upper_bound):
+        continue
+
+      diff = abs(total.M() - target_mass)
+      if diff < min_diff:
+        min_diff, indices, found = diff, [i,j], True
+
+  if not found:
+    return None, jet_list_1, jet_list_2
+
+  jet1 = jet_list_1.pop(indices[0])
+  jet2 = jet_list_2.pop(indices[1])
+  if len(other) == 0:
+    return jet1+jet2, jet_list_1, jet_list_2
+  else:
+    return jet1+jet2+other_products, jet_list_1, jet_list_2
+  # End of function def two jet mass fit
+
+
 
 def single_double_jet_mass_fit (
     target_mass, list_of_jets,
     lower_bound=float('-inf'), upper_bound=float('inf')):
   """ Find either single or double jet that
-      best fits mass of W+. """
+      best fits target mass. """
   min_diff = upper_bound - lower_bound
   found = False
   strategy = None
@@ -244,16 +287,16 @@ def single_double_jet_mass_fit (
 
   # If neither strategy finds a W+ candidate
   if not found:
-    return None, list_of_jets
+    return None, list_of_jets, strategy
 
   # Compare strategies and return
   if strategy == 'single':
     candidate = list_of_jets.pop(index)
-    return candidate, list_of_jets
+    return candidate, list_of_jets, strategy
   elif strategy == 'double':
     jet1 = list_of_jets.pop(indices[0])
     jet2 = list_of_jets.pop(indices[1])
-    return jet1+jet2, list_of_jets
+    return jet1+jet2, list_of_jets, strategy  # strategy <-- recent addition
   # End of function def single or double mass fit
 
 ######### Function: event_information #########
@@ -410,11 +453,11 @@ MT=1.730000e+02, MW=7.982436e+01):
     #  W_boson, non_btagged_jets = single_jet_mass_fit(
     #  MW, non_btagged_jets, cut.mw_min, cut.mw_max)
       # Find EITHER single or double jet
-      W_boson, non_btagged_jets = single_double_jet_mass_fit(
+      W_boson, non_btagged_jets, _ = single_double_jet_mass_fit(
         MW, non_btagged_jets, cut.mw_min, cut.mw_max)
 
     elif cut.nonbjet == 2:
-      W_boson, non_btagged_jets = double_jet_mass_fit(
+      W_boson, non_btagged_jets, _ = double_jet_mass_fit(
         MW, non_btagged_jets, cut.mw_min, cut.mw_max)
     if W_boson == None:
       continue
@@ -437,6 +480,239 @@ MT=1.730000e+02, MW=7.982436e+01):
 
   return mwHist, mtHist, mwpHist, METHist #histograms
   # End of def event_selection
+
+
+######### Function: W_selection #########
+def W_selection (inputFile, cut, event_type="signal", MW=7.982436e+01):
+  """ W selection for a single input file.
+  Input: delphes_events.root => Output: TH1F of single-j W, TH1F of double-jet W
+  inputfile: string (e.g. "tag_1_delphes_events.root")
+  cut: reconstruct.wpCut object
+  event_type: string -- "signal", "background", etc. """
+
+  chain = ROOT.TChain("Delphes")
+  chain.Add(inputFile)
+
+  # Create object of class ExRootTreeReader
+  treeReader = ROOT.ExRootTreeReader(chain)
+  numberOfEntries = treeReader.GetEntries()
+
+  # Get pointers to branches used in this analysis
+  branchJet = treeReader.UseBranch("Jet")
+  branchElectron = treeReader.UseBranch("Electron")
+  branchMuon = treeReader.UseBranch("Muon")
+  branchMET = treeReader.UseBranch("MissingET")
+
+  # Book histograms
+  # It is important to have a uniform naming scheme
+  # for the histogram objects, to access them in bulk
+  # later in statistical analysis
+  # W+ Reconstructed Mass
+  mjHist = ROOT.TH1F("W_mj", "Distribution of W mass from M_{j}", 40, 0.0, 200)
+  mjHist.SetXTitle("M_{j} [GeV]")
+  mjHist.SetYTitle("events")
+  
+  mjjHist = ROOT.TH1F("W_mjj", "Distribution of W mass from M_{jj}", 40, 0.0, 200)
+  mjjHist.SetXTitle("M_{jj} [GeV]")
+  mjjHist.SetYTitle("events")
+
+  # Loop over each event
+  for entry in range(numberOfEntries):
+
+    # Display progress bar
+    progress = (100*entry) / numberOfEntries
+    stdout.write('\r')
+    stdout.write("W Reconstruction: [{:25s}] {:d}%".format('='*int(progress/4), progress))
+    stdout.flush()
+
+    # Load selected branches with data from specified event
+    treeReader.ReadEntry(entry)
+  
+    # Event requirement:
+    # no lepton (hadronic channel only)
+    # at least 1 MET (n1) with E > 25, at least 4 jets
+    if branchElectron.GetEntries() != 0:
+      if any(
+             abs(branchElectron.At(i).Eta) < 2.5
+             or branchElectron.At(i).PT > 10
+             for i in range(branchElectron.GetEntries())):
+        continue
+    if branchMuon.GetEntries() != 0:
+      if any(
+             abs(branchMuon.At(i).Eta) < 2.5
+             or branchMuon.At(i).PT > 10
+             for i in range(branchMuon.GetEntries())):
+        continue
+    if branchMET.GetEntries() == 0 or branchMET.At(0).MET <= cut.MET:
+      continue
+    if branchJet.GetEntries() < cut.jet:
+      continue
+
+    # Select response jets
+    # The idea is to select detected jets,
+    # and to store them as TLorentzVector objects
+    no_tag_jets = [] # List of TLorentzVector object
+    for i in range(branchJet.GetEntries()): # Iterate over jets
+      jet = branchJet.At(i)
+      # Jets must meet minimum requirement
+      if jet.PT >= 20.0 and abs(jet.Eta) < 2.5:
+        # Choose only jets that are not tagged
+        if jet.BTag == 0 and jet.TTag == 0:
+          no_tag_jets.append(TLorentzVector_jet(jet))
+    
+    # If no tagged jet, skip event
+    if len(no_tag_jets) == 0:
+      continue
+
+    W_boson, no_tag_jets, strategy = single_double_jet_mass_fit(MW, no_tag_jets, cut.mw_min, cut.mw_max)
+
+    if W_boson == None:
+      continue
+
+    list_of_W.append(W_boson)
+
+    if strategy == 'single':
+      mjHist.Fill(W_boson.M())  # Fill W histogram
+    elif strategy == 'double':
+      mjjHist.Fill(W_boson.M())
+
+  stdout.write('\n\n')
+
+
+  return mjHist, mjjHist, list_of_W #histograms
+  # End of def event_selection
+
+######### Function: t_selection #########
+def t_selection (inputFile, cut, event_type="signal", MT=1.730000e+02):
+  """ t selection for a single input file. """
+
+  chain = ROOT.TChain("Delphes")
+  chain.Add(inputFile)
+
+  # Create object of class ExRootTreeReader
+  treeReader = ROOT.ExRootTreeReader(chain)
+  numberOfEntries = treeReader.GetEntries()
+
+  # Get pointers to branches used in this analysis
+  branchJet = treeReader.UseBranch("Jet")
+  branchFatJet = treeReader.UseBranch("FatJet")
+  branchElectron = treeReader.UseBranch("Electron")
+  branchMuon = treeReader.UseBranch("Muon")
+  branchMET = treeReader.UseBranch("MissingET")
+
+  # Book histograms
+  # It is important to have a uniform naming scheme
+  # for the histogram objects, to access them in bulk
+  # later in statistical analysis
+
+  # W Reconstructed Mass
+  W_mjHist = ROOT.TH1F("W_mj", "Distribution of W mass from M_{j}", 40, 0.0, 200)
+  W_mjHist.SetXTitle("M_{j} [GeV]")
+  W_mjHist.SetYTitle("events")
+  
+  W_mjjHist = ROOT.TH1F("W_mjj", "Distribution of W mass from M_{jj}", 40, 0.0, 200)
+  W_mjjHist.SetXTitle("M_{jj} [GeV]")
+  W_mjjHist.SetYTitle("events")
+
+  # Top Reconstructed Mass
+  top_mjHist = ROOT.TH1F("top_mj", "Distribution of top mass from M_{j}", 60, 0.0, 300)
+  top_mjHist.SetXTitle("M_{j} [GeV]")
+  top_mjHist.SetYTitle("events")
+  
+  top_mwbHist = ROOT.TH1F("top_mwb", "Distribution of top mass from M_{Wb}", 60, 0.0, 300)
+  top_mwbHist.SetXTitle("M_{Wb} [GeV]")
+  top_mwbHist.SetYTitle("events")
+
+  top_mtHist = ROOT.TH1F("top_mt", "Distribution of top mass from boosted top tagger", 60, 0.0, 300)
+  top_mtHist.SetXTitle("M_{t} [GeV]")
+  top_mtHist.SetYTitle("events")
+
+  # Loop over each event
+  for entry in range(numberOfEntries):
+
+    # Display progress bar
+    progress = (100*entry) / numberOfEntries
+    stdout.write('\r')
+    stdout.write("Top Reconstruction: [{:25s}] {:d}%".format('='*int(progress/4), progress))
+    stdout.flush()
+
+    # Load selected branches with data from specified event
+    treeReader.ReadEntry(entry)
+  
+    # Event requirement:
+    # no lepton (hadronic channel only)
+    # at least 1 MET (n1) with E > 25, at least 4 jets
+    if branchElectron.GetEntries() != 0:
+      if any(
+             abs(branchElectron.At(i).Eta) < 2.5
+             or branchElectron.At(i).PT > 10
+             for i in range(branchElectron.GetEntries())):
+        continue
+    if branchMuon.GetEntries() != 0:
+      if any(
+             abs(branchMuon.At(i).Eta) < 2.5
+             or branchMuon.At(i).PT > 10
+             for i in range(branchMuon.GetEntries())):
+        continue
+    if branchMET.GetEntries() == 0 or branchMET.At(0).MET <= cut.MET:
+      continue
+    if branchJet.GetEntries() < cut.jet:
+      continue
+
+    # Select response jets
+    # The idea is to select detected jets,
+    # and to store them as TLorentzVector objects
+    no_tag_jets = [] # List of TLorentzVector object
+    b_tag_jets = []
+    t_tag_jets = []
+
+    # Select response jets
+    # The idea is to select detected jets,
+    # and to store them as TLorentzVector objects
+
+    for i in range(branchJet.GetEntries()): # Iterate over jets
+      jet = branchJet.At(i)
+      # Jets must meet minimum requirement
+      if jet.PT >= 20.0 and abs(jet.Eta) < 2.5:
+        # Choose only jets that are not tagged
+        if jet.BTag == 0 and jet.TTag == 0:
+          no_tag_jets.append(TLorentzVector_jet(jet))
+	elif jet.BTag == 1 and jet.TTag == 0:
+          b_tag_jets.append(TLorentzVector_jet(jet))
+
+    for j in range(branchFatJet.GetEntries()):
+      fatjet = branchFatJet.At(j)
+      if fatjet.TTag == 1:
+        t_tag_jets.append(TLorentzVector_jet(fatjet))
+
+    # Get W boson for this single event
+    if len(no_tag_jets) > 0:
+      W_boson, no_tag_jets, strategy = single_double_jet_mass_fit(MW, no_tag_jets, cut.mw_min, cut.mw_max)
+
+    if strategy == 'single':
+      W_mjHist.Fill(W_boson.M())  # Fill W histogram
+    elif strategy == 'double':
+      W_mjjHist.Fill(W_boson.M())
+
+    # Get top quarks for this single event
+    if len(no_tag_jets) > 0:
+      top, _ = single_jet_mass_fit(MT, no_tag_jets, cut.mt_min, cut.mt_max)
+      if top != None:
+        top_mjHist.Fill(top.M())
+
+    if len(b_tag_jets) > 0 and W_boson != None:
+      top, _ = single_jet_mass_fit(MT, b_tag_jets, cut.mt_min, cut.mt_max, W_boson)
+      if top != None:
+        top_mwbHist.Fill(top.M())
+
+    if len(t_tag_jets) > 0:
+      for top in t_tag_jets:
+        top_mtHist.Fill(top.M())
+
+  stdout.write('\n\n')
+  return W_mjHist, W_mjjHist, top_mjHist, top_mwbHist, top_mtHist #histograms
+  # End of def event_selection
+
 
 ######### Function: canvas_draw #########
 ### Put histograms on one TCanvas and return TCanvas

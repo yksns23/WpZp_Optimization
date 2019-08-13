@@ -11,7 +11,7 @@ Output: One file (.root) containing histograms and cut&event information
         (will open and edit)
 
 In terminal, type:
-python event_selection [channel] [run-start] [run-end] [tag] [btag] [non_b] [mw_low] [mw_up] [mt_low] [mt_up] [met] ([output])
+python event_selection [channel] [run-start] [run-end] [tag] [mw_low] [mw_up] [mt_low] [mt_up] [met] ([output])
 
 
 [channel]: enter whether signal, background, specify channel, etc.
@@ -25,7 +25,7 @@ python event_selection [channel] [run-start] [run-end] [tag] [btag] [non_b] [mw_
 from sys import argv, exit
 from os import path, mkdir
 import ROOT
-from reconstruct import *
+import reconstruct
 from time import clock
 
 ROOT.gSystem.Load("libDelphes")
@@ -60,7 +60,7 @@ if len(argv) > 5:
       break
     val[i-5] = int(argv[i])
 
-CUT = wpCut()
+CUT = reconstruct.wpCut()
 CUT.setBTag(val[0])
 CUT.setNonBJet(val[1])
 CUT.setMWBosonLower(val[2])
@@ -114,58 +114,57 @@ def main(*argv):
   for i in range(int(run_start), int(run_end)+1):
     print "\nNow starting run_{:02d}...".format(i)
 
-    directory = "data/"+channel+"/Events/run_{:02d}/".format(i)
-    inputfile = "tag_{}_delphes_events.root".format(tag)
-    banner = "run_{:02d}_tag_{}_banner.txt".format(i, tag)
-    delphes_file = directory + inputfile
-    banner_file = directory + banner
+    #directory = "data/"+channel+"/Events/run_{:02d}_decayed_1/".format(i)
+    #inputfile = "tag_{}_delphes_events.root".format(tag)
+    #banner = "run_{:02d}_tag_{}_banner.txt".format(i, tag)
+    #delphes_file = directory + inputfile
+    #banner_file = directory + banner
+    delphes_file = "run_{:02d}.root".format(i)
     print "  Variables set. Accessing files..."
 
     # Obtain histograms
-    mwHist, mtHist, mwpHist, METHist =\
-    event_selection (delphes_file, CUT, event_type, MT, MW)
-    print "  Event selection: done"
+    mjHist, mjjHist, _ =\
+    reconstruct.W_selection(delphes_file, CUT, event_type, MW)
+    print "  Single/double jet mass fit: done"
 
     # Obtain event information
-    event_info =\
-    event_information (banner_file, CUT, *PID)
-    print "  Event information: done"
+    #event_info =\
+    #reconstruct.event_information (banner_file, CUT, *PID)
+    #print "  Event information: done"
 
     # Store the histograms into outputFile
     # directory: .root/cutID/channel/run_{}
     print "  Writing to file..."
     outputFile.mkdir(this_dir+"/run_"+str(i))
     ROOT.gDirectory.cd("/"+this_dir+"/run_"+str(i))
-    mwHist.Write()
-    mtHist.Write()
-    mwpHist.Write()
-    METHist.Write()
+    mjHist.Write()
+    mjjHist.Write()
 
     # Store event information into TNtuple objects
-    var_list = ":".join(event_info.keys())
-    ntuple = ROOT.TNtuple("ntuple", "event info", var_list)
-    ntuple.Fill(*event_info.values())
-    ntuple.Write()
+    # var_list = ":".join(event_info.keys())
+    # ntuple = ROOT.TNtuple("ntuple", "event info", var_list)
+    # ntuple.Fill(*event_info.values())
+    # ntuple.Write()
 
     # Store TCanvas displaying the histograms
-    if not outputFile.Get("diagrams_"+CUT.cutID):
-      outputFile.mkdir("diagrams_"+CUT.cutID)
-    ROOT.gDirectory.cd("/diagrams_"+CUT.cutID)
-    canvas = canvas_draw(channel+"_run_"+str(i), mwHist, mtHist, mwpHist, METHist) # Def. in reconstruct.py
-    canvas.Write()
+    #if not outputFile.Get("diagrams_"+CUT.cutID):
+    #  outputFile.mkdir("diagrams_"+CUT.cutID)
+    #ROOT.gDirectory.cd("/diagrams_"+CUT.cutID)
+    #canvas = canvas_draw(channel+"_run_"+str(i), mwHist, mtHist, mwpHist, METHist) # Def. in reconstruct.py
+    #canvas.Write()
 
     # Print TCanvas to jpeg diagrams
-    diagram_dir = "diagrams_{}".format(CUT.cutID)
-    if not path.exists(diagram_dir):
-      mkdir(diagram_dir)
-    canvas.Print(diagram_dir + "/{}_run{}.jpg".format(event_type, i))
+    #diagram_dir = "diagrams_{}".format(CUT.cutID)
+    #if not path.exists(diagram_dir):
+    #  mkdir(diagram_dir)
+    #canvas.Print(diagram_dir + "/{}_run{}.jpg".format(event_type, i))
 
     # Close canvas
-    canvas.Close()
+    #canvas.Close()
     
     print "  Congrats! run_{:02d} is now completed".format(i)
 
-    del canvas, mwHist, mtHist, mwpHist, METHist # Prevent memory leak
+    del mjHist, mjjHist#canvas, mwHist, mtHist, mwpHist, METHist # Prevent memory leak
 
     if i+1 < int(run_end):
       print "  Moving on to run_{:02d} ...".format(i+1)
