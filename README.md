@@ -2,6 +2,8 @@ Last edit: August 5, 2019
 
 Currently modifying reconstruction codes for W', t, and b objects to analyze each seperately.
 
+Codes are becoming a mess, but I doubt that anyone else will use it.
+
 
 Welcome!
 
